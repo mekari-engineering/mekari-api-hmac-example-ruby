@@ -9,8 +9,9 @@ require 'faraday'
 def generate_headers(method, path)
   datetime = Time.now.httpdate
   request_line = "#{method} #{path} HTTP/1.1"
-  payload = [datetime, request_line].join("\n")
+  payload = ["date: #{datetime}", request_line].join("\n")
   digest = OpenSSL::HMAC.digest(OpenSSL::Digest.new('sha256'), ENV['MEKARI_API_CLIENT_SECRET'], payload)
+
   signature = Base64.strict_encode64(digest)
 
   {
@@ -22,12 +23,16 @@ end
 
 # Set method and path for the request
 method = 'POST'
-path = '/v2/klikpajak/v1/efaktur/out/'
+path = '/v2/klikpajak/v1/efaktur/out'
 default_headers = { 'X-Idempotency-Key' => '1234' }
 request_headers = default_headers.merge(generate_headers(method, path))
 
-puts "Start request with headers: #{request_headers}"
+puts "Start request with url: #{ENV['MEKARI_API_BASE_URL']}#{path}, headers: #{request_headers}"
 
-response = Faraday.post("#{ENV['MEKARI_API_BASE_URL']}/#{path}", nil, request_headers)
+conn = Faraday.new(url: ENV['MEKARI_API_BASE_URL']) do |faraday|
+  faraday.response :logger # log requests and responses to $stdout
+end
+
+response = conn.post(path, nil, request_headers)
 
 puts "Got response with status: #{response.status}, body: #{response.body}"
