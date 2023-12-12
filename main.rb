@@ -6,9 +6,9 @@ require 'faraday'
 # Generate headers to be used on API call.
 #
 # @return [Hash<String, Object>]
-def generate_headers(method, path)
+def generate_headers(method, path_with_query_param)
   datetime = Time.now.httpdate
-  request_line = "#{method} #{path} HTTP/1.1"
+  request_line = "#{method} #{path_with_query_param} HTTP/1.1"
   payload = ["date: #{datetime}", request_line].join("\n")
   digest = OpenSSL::HMAC.digest(OpenSSL::Digest.new('sha256'), ENV['MEKARI_API_CLIENT_SECRET'], payload)
 
@@ -24,8 +24,9 @@ end
 # Set method and path for the request
 method = 'POST'
 path = '/v2/klikpajak/v1/efaktur/out'
+query_param = '?auto_approval=false'
 default_headers = { 'X-Idempotency-Key' => '1234' }
-request_headers = default_headers.merge(generate_headers(method, path))
+request_headers = default_headers.merge(generate_headers(method, path + query_param))
 
 puts "Start request with url: #{ENV['MEKARI_API_BASE_URL']}#{path}, headers: #{request_headers}"
 
